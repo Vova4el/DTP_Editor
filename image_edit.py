@@ -325,7 +325,7 @@ class ImageEdit():
 
     def _move_to(self, event):
         self.canvas.scan_dragto(event.x, event.y, gain=1)
-        self._show_zoomed_image()
+        # self._show_zoomed_image()
 
     def _zoom_with_wheel(self,event):
         x = self.canvas.canvasx(event.x)

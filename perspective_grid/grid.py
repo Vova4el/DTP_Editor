@@ -28,6 +28,8 @@ class Grid:
         self.sizeWH = [1, 1, 1, 1]
         self.jmin = 0
         self.jmax = 0
+        self.imin = 0
+        self.imax = 0
 
         self.points_in_new_img = []
 
@@ -69,6 +71,7 @@ class Grid:
 
             if fs1 == False:
                 s_p_1, self.sizeWH[0], s_p_2, self.sizeWH[1] = self.div_S_peresek(self.mint[0], self.s, center, self.s2)
+                self.imax = len(s_p_1)+len(s_p_2)
             if fs2 == False:
                 s_p2_1, self.sizeWH[2], s_p2_2, self.sizeWH[3] = self.div_S_peresek(self.mint[1], self.s2, center,
                                                                                     self.s)
@@ -439,6 +442,8 @@ class Grid:
                     center = self.find_new_point(rDown, lUp, rUp, lDown)
                     center_line = self.find_new_point(lUp, rUp, center, s)
                     k += 1
+                if k == 10:
+                    sizeWH = 1
                 t2 = rUp
                 t1 = lUp
 
@@ -682,6 +687,7 @@ class Grid:
         p_d = []
         for point in self.points_distance:
             true_block, new_img_points = None, None
+
             for i, blocks in enumerate(all_blocks):
                 for block in blocks:
                     p_b = [self.allPoints[p[0]][p[1]] for p in block]
@@ -710,26 +716,36 @@ class Grid:
                     a = ((a[0] / 100) *(int(self.w) * 2 * self.sizeWH[2]))
                 elif true_block[0][0][1] == self.jmax:
                     a = (int(self.w) * 2 * self.sizeWH[2]) + ((a[0] / 100) *(int(self.w) * 2 * self.sizeWH[3]))
-                    for i in range(self.jmax-self.jmin-1):
+                    for i in range(self.jmax-1):
                         a = a + (int(self.w) * 2)
                 else:
+                    tminus = self.jmin
                     a = ((a[0] / 100) * (int(self.w) * 2))
-                    a =a+ (int(self.w) * 2 * self.sizeWH[2])
-                    for i in range(true_block[0][0][1]-self.jmin-1):
+                    if self.jmin == 0:
+                        tminus += 1
+                        a = a+ (int(self.w) * 2 * self.sizeWH[2])
+                    for i in range(true_block[0][0][1]-tminus):
                         a = a + (int(self.w) * 2)
 
 
                 a2 = self.point_position_in_percentages(s2p1, s2p2, ts2)
                 if true_block[1] == 0:
                     a2 = ((a2[1] / 100) *(int(self.h) * 2 * self.sizeWH[0]))
-                elif true_block[1] == (len(all_blocks)-1):
+                elif true_block[1] == (len(all_blocks)-1) :
+
                     a2 = (int(self.h) * 2 * self.sizeWH[0]) + ((a2[1] / 100) *(int(self.h) * 2 * self.sizeWH[1]))
+
+
                     for i in range(len(all_blocks)-2):
                         a2 = a2 + (int(self.h) * 2)
                 else:
+                    tminus = 0
                     a2 = ((a2[1] / 100) * (int(self.h) * 2))
-                    a2 =a2+ (int(self.h) * 2 * self.sizeWH[0])
-                    for i in range(true_block[1]-1):
+                    if self.imin == 0:
+                        tminus += 1
+                        a2 = a2 + (int(self.h) * 2 * self.sizeWH[0])
+
+                    for i in range(true_block[1]-tminus):
                         a2 = a2 + (int(self.h) * 2)
 
 
@@ -739,7 +755,6 @@ class Grid:
                     self.labelDist = Label(parent_frame, text="Дистанция = "+str(round(dist * (int(self.h) / (int(self.h) * 2)), 2))+"cм")
                     self.labelDist.grid(row=9, column=0, padx=0, pady=0, sticky='w')
                     image.create_line_dist(p_d[0],p_d[1])
-
             else:
                 peresek = []
                 par1_1 = [new_img_points[0], 0]

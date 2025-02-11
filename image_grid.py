@@ -234,6 +234,13 @@ class ImageGrid(ImageInfo):
                 point["canvas_y"] = coords[1] + radius
     def _update_canvas_coordinates(self):
         try:
+            if self.canvas2:
+                self.canvas2.destroy()
+                self.canvas2 = None
+            self.grid.points_distance = []  # Initialize or adjust as needed
+
+
+
             points = [(float(self.entryX1.get()), float(self.entryY1.get())),
                       (float(self.entryX2.get()), float(self.entryY2.get())),
                       (float(self.entryX3.get()), float(self.entryY3.get())),
@@ -333,26 +340,6 @@ class ImageGrid(ImageInfo):
         self.entryX4 = self.create_entry(7, 1, self.grid.points[3][0])
         self.entryY4 = self.create_entry(7, 2, self.grid.points[3][1])
 
-        # # Создание Canvas для отображения изображения
-        # self.canvas2 = Canvas(self.additional_frame, bg="white", width=400, height=400)
-        # self.canvas2.grid(row=8, column=0, columnspan=3)
-        #
-        # pts1 = np.float32([self.grid.points[0], self.grid.points[3], self.grid.points[1], self.grid.points[2]])
-        # pts2 = np.float32(
-        #     [[0, 0], [0, int(100)], [int(100), 0], [int(100), int(100)]])
-        # w_new_img = 100
-        # h_new_img = 100
-        # im = np.array(Image.open(self.path))
-        # matrix = cv2.getPerspectiveTransform(pts1, pts2)
-        # new_img = cv2.warpPerspective(im, matrix, (int(100), int(100)))
-        # # Загружаем изображение
-        # self.original_image = Image.fromarray(new_img)
-        #
-        # self.img_width, self.img_height = self.original_image.size
-        # self.zoom_level = 1.0
-        #
-        # self.image_info = ImageEdit(self.original_image)
-        # self.image_info.set_canvas(self.canvas2)
 
     def remove_additional_frame(self):
         # Удаляем дополнительный фрейм, если он существует
@@ -408,6 +395,7 @@ class ImageGrid(ImageInfo):
             draw = ImageDraw.Draw(self.image)
             jmin = len(self.grid.allPoints[0])
             jmax = 0
+            imin = len(self.grid.allPoints)
             for i in range(len(self.grid.allPoints)):
 
                 dx = []
@@ -481,12 +469,13 @@ class ImageGrid(ImageInfo):
                                  0 <= self.grid.allPoints[i][j + 1][1] <= self.grid.height)or (0 <= self.grid.allPoints[i+1][j][0] <= self.grid.width and
                                  0 <= self.grid.allPoints[i+1][j][1] <= self.grid.height) or (0 <= self.grid.allPoints[i + 1][j + 1][0] <= self.grid.width and
                                  0 <= self.grid.allPoints[i + 1][j + 1][1] <= self.grid.height) :
-
                             arr.append([(i,j),(i,j+1),(i+1,j),(i+1,j+1)])
                             if jmin >j:
                                 jmin = j
                             if jmax < j:
                                 jmax = j
+                            if imin >i:
+                                imin = i
                             # Координаты четырех линий ячейки
                             lines = [
                                 (self.grid.allPoints[i][j][0], self.grid.allPoints[i][j][1],
@@ -519,26 +508,35 @@ class ImageGrid(ImageInfo):
             h = int(self.grid.h) *2
             self.grid.jmin = jmin
             self.grid.jmax = jmax
+            self.grid.imin = imin
             big_img_list = []
             for blocks in self.all_blocks:
                 img = None
                 t= []
                 img_list = []  # Список для горизонтального объединения изображений в строке
-                if blocks[0][0][1] >jmin:
+                ti = 1
+                fc = False
+                if blocks[0][0][1] > jmin:
                     for i in range(blocks[0][0][1]-jmin):
-
                         if blocks[0][0][0] == 0 and jmin == 0 and i ==0:
+                            if int(self.grid.sizeWH[0] * h) == 0:
+                                fc = True
                             t.append(1)
                             img_black = np.zeros((int(h*self.grid.sizeWH[0]), int(w*self.grid.sizeWH[2]), 3), dtype="uint8")
                         elif blocks[0][0][0] == 0:
+                            if int(self.grid.sizeWH[0] * h) == 0:
+                                fc = True
                             t.append(2)
                             img_black = np.zeros((int(h * self.grid.sizeWH[0]), w, 3), dtype="uint8")
-
                         elif blocks[0][0][0] == (len(self.grid.allPoints)-2) and jmin == 0 and i ==0:
                             t.append(11)
+                            if int(self.grid.sizeWH[1] * h) == 0:
+                                fc = True
                             img_black = np.zeros((int(h*self.grid.sizeWH[1]), int(w*self.grid.sizeWH[2]), 3), dtype="uint8")
                         elif blocks[0][0][0] == (len(self.grid.allPoints)-2):
                             t.append(22)
+                            if int(self.grid.sizeWH[1] * h) == 0:
+                                fc = True
                             img_black = np.zeros((int(h * self.grid.sizeWH[1]), w, 3), dtype="uint8")
                         elif jmin == 0 and i ==0:
                             t.append(3)
@@ -546,8 +544,9 @@ class ImageGrid(ImageInfo):
                         else:
                             t.append(4)
                             img_black = np.zeros((h , w, 3), dtype="uint8")
-
                         img_list.append(img_black)
+                    # if fc == True:
+                    #     continue
                 t = []
                 wp = 0
                 hp = 0
@@ -558,45 +557,54 @@ class ImageGrid(ImageInfo):
                 for p in blocks:
                     p3 = p[1]
                     p4 = p[3]
+                    # Левый верхний угол ((0,0))
                     if p[0][0] == 0 and p[0][1] == 0 :
                         t.append(1)
-                        wp += w*self.grid.sizeWH[2]
-                        hp = h*self.grid.sizeWH[0]
+                        wp += int(w*self.grid.sizeWH[2])
+                        hp = int(h*self.grid.sizeWH[0])
+                    # верхний край
                     elif p[0][0] == 0 and p[0][1] == (len(self.grid.allPoints[0])-2) :
                         t.append(2)
-                        wp += w*self.grid.sizeWH[3]
-                        hp = h*self.grid.sizeWH[0]
+                        wp += int(w*self.grid.sizeWH[3])
+                        hp = int(h*self.grid.sizeWH[0])
+                    # Левая граница (не угол)
                     elif p[0][0] == 0:
                         t.append(3)
                         wp += w
-                        hp = h * self.grid.sizeWH[0]
+                        hp = int(h * self.grid.sizeWH[0])
+                    # находится в нижнем левом углу
                     elif p[3][0] == (len(self.grid.allPoints)-1) and p[0][1] == 0 :
                         t.append(4)
-                        wp += w*self.grid.sizeWH[2]
-                        hp = h*self.grid.sizeWH[1]
+                        wp += int(w*self.grid.sizeWH[2])
+                        hp = int(h*self.grid.sizeWH[1])
+                    # Правый нижний угол ((max X, max Y))
                     elif p[0][0] == (len(self.grid.allPoints)-2) and p[0][1] == (len(self.grid.allPoints[0])-2) :
                         t.append(5)
-                        wp += w*self.grid.sizeWH[3]
-                        hp = h*self.grid.sizeWH[1]
+                        wp += int(w*self.grid.sizeWH[3])
+                        hp = int(h*self.grid.sizeWH[1])
+                    # нижний край
                     elif p[0][0] == (len(self.grid.allPoints)-2):
                         t.append(6)
                         wp += w
-                        hp = h * self.grid.sizeWH[1]
+                        hp = int(h * self.grid.sizeWH[1])
+                    # Верхняя граница (но не угол)
                     elif p[0][1] == 0 :
                         t.append(8)
-                        wp += w*self.grid.sizeWH[2]
+                        wp += int(w*self.grid.sizeWH[2])
                         hp = h
+                    # Нижняя граница (но не угол)
                     elif p[0][1] == (len(self.grid.allPoints[0])-2) :
                         t.append(9)
-                        wp += w*self.grid.sizeWH[3]
+                        wp += int(w*self.grid.sizeWH[3])
                         hp = h
+                    # Обычный блок (без границ)
                     else:
                         t.append(7)
                         wp += w
                         hp = h
                 pts1 = np.float32([self.grid.allPoints[p1[0]][p1[1]], self.grid.allPoints[p2[0]][p2[1]], self.grid.allPoints[p3[0]][p3[1]], self.grid.allPoints[p4[0]][p4[1]]])
                 pts2 = np.float32(
-                    [[0, 0], [0, int(hp)], [int(wp), 0], [int(wp), int(hp)]])
+                    [[0, 0], [0, hp], [int(wp), 0], [int(wp), hp]])
                 im = np.array(Image.open(self.path))
                 matrix = cv2.getPerspectiveTransform(pts1, pts2)
                 new_img = cv2.warpPerspective(im, matrix, (int(wp), int(hp)))
@@ -607,15 +615,23 @@ class ImageGrid(ImageInfo):
 
                         if blocks[0][0][0] == (len(self.grid.allPoints)-2) and jmax == (len(self.grid.allPoints[0])-2) and i == (jmax-blocks[len(blocks)-1][0][1]-1):
                             t.append(1)
+                            if int(self.grid.sizeWH[1] * h) == 0:
+                                fc = True
                             img_black = np.zeros((int(h*self.grid.sizeWH[1]), int(w*self.grid.sizeWH[3]), 3), dtype="uint8")
                         elif blocks[0][0][0] == (len(self.grid.allPoints)-2):
                             t.append(2)
+                            if int(self.grid.sizeWH[1] * h) == 0:
+                                fc = True
                             img_black = np.zeros((int(h*self.grid.sizeWH[1]), w, 3), dtype="uint8")
                         elif blocks[0][0][0] == 0 and jmax== (len(self.grid.allPoints[0])-2) and i == (jmax-blocks[len(blocks)-1][0][1]-1):
                             t.append(11)
+                            if int(self.grid.sizeWH[0] * h) == 0:
+                                fc = True
                             img_black = np.zeros((int(h*self.grid.sizeWH[0]), int(w*self.grid.sizeWH[3]), 3), dtype="uint8")
                         elif blocks[0][0][0] == 0:
                             t.append(21)
+                            if int(self.grid.sizeWH[0] * h) == 0:
+                                fc = True
                             img_black = np.zeros((int(h*self.grid.sizeWH[0]), w, 3), dtype="uint8")
                         elif jmax == (len(self.grid.allPoints[0])-2) and i ==(jmax-blocks[len(blocks)-1][0][1]-1):
                             t.append(3)
@@ -624,8 +640,10 @@ class ImageGrid(ImageInfo):
                             t.append(4)
                             img_black = np.zeros((h , w, 3), dtype="uint8")
                         img_list.append(img_black)
-
+                # if fc == True:
+                #     continue
                 img_row = np.concatenate(img_list, axis=1)
+
                 big_img_list.append(img_row)
             # Объединяем все строки изображений по вертикали
             big_img = np.concatenate(big_img_list, axis=0)
@@ -749,14 +767,8 @@ class ImageGrid(ImageInfo):
 
         self.line_ids_BR= []
 
-        self.root = root
 
-    def make_line(self):
-        self.grid.height = self.image.height
-        self.grid.width = self.image.width
-        self.grid.f = False
-        self.grid.make_grid()
-        self.add_lines_frame()
+        self.root = root
 
     def _bind_line(self):
         self._unbind_grid()
