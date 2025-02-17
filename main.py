@@ -120,6 +120,7 @@ class PyPhotoEditor:
         grid_menu.add_command(label="Начать выделение", command=self.start_grid_selection_of_current_image)
         grid_menu.add_command(label="Наложить сетку", command=self.make_grid)
         grid_menu.add_command(label="Начать выделять линию для вычисления дистанции", command=self.start_line_selection)
+        grid_menu.add_command(label="Найти следы", command=self.find_tracks)
         grid_menu.add_command(label="Закрыть", command=self.Close_grid)
 
         convert_menu = Menu(edit_menu, tearoff=0)
@@ -412,6 +413,13 @@ class PyPhotoEditor:
         if not image:
             return
         image.start_line_selection(self.root)
+
+    def find_tracks(self):
+        image = self.current_image()
+        if not image:
+            return
+        image.find_tracks()
+
 
     def Close_grid(self):
         image = self.current_image()

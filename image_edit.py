@@ -25,6 +25,7 @@ class ImageEdit():
 
         #######
         self.line_distance = None
+        self.line_traces = None
 
 
 
@@ -423,3 +424,22 @@ class ImageEdit():
                                                        canvas_x2,
                                                        canvas_y2,
                                                        fill='red', width=2)
+
+    def create_line_traces(self,lines):
+        if self.line_traces:
+            for i in range(len(self.line_traces)):
+                self.canvas.delete(self.line_traces[i])
+        self.line_traces = []
+        for line in lines:
+            point1 = line[0]
+            point2 = line[1]
+            bbox = self.canvas.bbox(self.image_container)
+            canvas_x1 = bbox[0] + point1[0] * self.imscale
+            canvas_y1 = bbox[1] + point1[1] * self.imscale
+            canvas_x2 = bbox[0] + point2[0] * self.imscale
+            canvas_y2 = bbox[1] + point2[1] * self.imscale
+            self.line_traces.append(self.canvas.create_line(canvas_x1,
+                                                           canvas_y1,
+                                                           canvas_x2,
+                                                           canvas_y2,
+                                                       fill='red', width=2))

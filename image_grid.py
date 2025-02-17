@@ -7,15 +7,22 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageTk
 
 from Dialog.input_dialog import InputDialog
+from ai.ai import AI
 from image_edit import ImageEdit
 from image_info import ImageInfo
 from perspective_grid.grid import Grid
 
+class Event:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
 class ImageGrid(ImageInfo):
     def __init__(self, image, path, tab):
         super().__init__(image, path, tab)
         # Additional attributes for ImageGrid
         self.grid = Grid()  # Initialize or adjust as needed
+        self.ai = AI()
+
         self.main_points_id = []
         self.points_distance = []
         self.line_distance_ids_BR= []
@@ -74,7 +81,7 @@ class ImageGrid(ImageInfo):
             point_id = self.canvas.create_oval(
                 canvas_x - radius, canvas_y - radius,
                 canvas_x + radius, canvas_y + radius,
-                fill='red', outline='red'
+                 outline='red', width=4
             )
             self.main_points_id.append({
                 "id": point_id,
@@ -497,6 +504,7 @@ class ImageGrid(ImageInfo):
 
 
                 if arr != []:
+                    print(i)
                     self.all_blocks.append(arr)
             self.update_image_on_canvas()
             # Создание Canvas для отображения изображения
@@ -587,21 +595,24 @@ class ImageGrid(ImageInfo):
                         t.append(6)
                         wp += w
                         hp = int(h * self.grid.sizeWH[1])
-                    # Верхняя граница (но не угол)
+                        print(66666666666)
+                    # левая граница (но не угол)
                     elif p[0][1] == 0 :
                         t.append(8)
                         wp += int(w*self.grid.sizeWH[2])
                         hp = h
-                    # Нижняя граница (но не угол)
+                    # правая граница (но не угол)
                     elif p[0][1] == (len(self.grid.allPoints[0])-2) :
                         t.append(9)
                         wp += int(w*self.grid.sizeWH[3])
                         hp = h
+                        print(99999999999)
                     # Обычный блок (без границ)
                     else:
                         t.append(7)
                         wp += w
                         hp = h
+                    print(t)
                 pts1 = np.float32([self.grid.allPoints[p1[0]][p1[1]], self.grid.allPoints[p2[0]][p2[1]], self.grid.allPoints[p3[0]][p3[1]], self.grid.allPoints[p4[0]][p4[1]]])
                 pts2 = np.float32(
                     [[0, 0], [0, hp], [int(wp), 0], [int(wp), hp]])
@@ -640,8 +651,8 @@ class ImageGrid(ImageInfo):
                             t.append(4)
                             img_black = np.zeros((h , w, 3), dtype="uint8")
                         img_list.append(img_black)
-                # if fc == True:
-                #     continue
+                if fc == True:
+                    continue
                 img_row = np.concatenate(img_list, axis=1)
 
                 big_img_list.append(img_row)
@@ -678,7 +689,7 @@ class ImageGrid(ImageInfo):
                 point_id = self.canvas.create_oval(
                     canvas_x - radius, canvas_y - radius,
                     canvas_x + radius, canvas_y + radius,
-                    fill='red', outline='red'
+                    outline='red', width=4
                 )
                 self.points_distance.append({
                     "id": point_id,
@@ -737,6 +748,39 @@ class ImageGrid(ImageInfo):
     def start_line_selection(self, root):
         self._bind_line()
         self.root = root
+
+    def find_tracks(self):
+        self.ai.getTraces(self.path)
+        draw = ImageDraw.Draw(self.image)
+        lines = []
+
+
+        for obj in self.ai.objects_points:
+            for i in range(len(obj)-1):
+                event = Event(obj[i][0], obj[i][1])
+                x, y = self._get_actual_image_coordinates(event)
+                event = Event(obj[i+1][0], obj[i+1][1])
+                x2, y2 = self._get_actual_image_coordinates(event)
+                if self.grid.check_point_in_blocks((x, y), self.all_blocks) and self.grid.check_point_in_blocks((x2, y2), self.all_blocks):
+                    p1 = self.grid.get_point_2D(self.all_blocks, obj[i])
+                    p2 = self.grid.get_point_2D(self.all_blocks, obj[i + 1])
+                    lines.append([p1,p2])
+
+                draw.line([tuple(obj[i]), tuple(obj[i+1])], fill="cyan", width=6)
+            draw.line([tuple(obj[0]), tuple(obj[len(obj)-1])], fill="cyan", width=6)
+            event = Event(obj[0][0], obj[0][1])
+            x, y = self._get_actual_image_coordinates(event)
+            event = Event(obj[len(obj)-1][0], obj[len(obj)-1][1])
+            x2, y2 = self._get_actual_image_coordinates(event)
+            if self.grid.check_point_in_blocks((x, y), self.all_blocks) and self.grid.check_point_in_blocks((x2, y2),
+                                                                                                            self.all_blocks):
+                p1 = self.grid.get_point_2D(self.all_blocks, obj[0])
+                p2 = self.grid.get_point_2D(self.all_blocks, obj[len(obj)-1])
+                lines.append([p1, p2])
+        if self.image_info:
+            self.image_info.create_line_traces(lines)
+        self.update_image_on_canvas()
+
 
     def Close_grid(self, root):
         self._unbind_grid()

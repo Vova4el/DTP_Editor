@@ -406,23 +406,20 @@ class Grid:
             fDist = self.Distance(rUp,rDown) >= origRDist or self.Distance(lUp,lDown)>=origLDist
             if (self.does_line_intersect_square(t1, t2, [(0, 0), (0, self.height), (self.width, self.height),
                                                          (self.width, 0)]) == False
-                    and self.are_points_in_same_direction(lDown, lUp, t1) and self.are_points_in_same_direction(rDown,
-                                                                                                                rUp,
-                                                                                                                t2)) and fDist==True:
+                    and self.are_points_in_same_direction(lDown, lUp, t1)
+                and self.are_points_in_same_direction(rDown, rUp, t2)) and fDist==True:
 
                 lDown = lUp
                 rDown = rUp
                 rUp = t2
                 lUp = t1
-                arrL = [lDown, lUp]
-                arrR = [rDown, rUp]
                 center = self.find_new_point(rDown, lUp, rUp, lDown)
                 center_line = self.find_new_point(lUp, rUp, center, s)
                 k = 0
-                tl = lUp
-                tr = rUp
                 sizet = sizeWH
-                while (k < 10):
+                sizeWHt = sizeWH
+                fk = False
+                while (k <= 10):
                     if s2 != None:
                         tl = self.find_new_point(center, s2, lUp, lDown)
                         tr = self.find_new_point(center, s2, rUp, rDown)
@@ -431,22 +428,24 @@ class Grid:
                         tl = self.find_new_point(center2[0], center2[1], lUp, lDown)
                         tr = self.find_new_point(center2[0], center2[1], rUp, rDown)
                     sizet = sizet / 2
+                    sizeWHt = sizeWHt - sizet
                     if self.does_line_intersect_square(tl, tr, [(0, 0), (0, self.height), (self.width, self.height),
                                                                 (self.width, 0)]) == False:
                         lUp = tl
                         rUp = tr
-                        sizeWH = sizeWH - sizet
                     else:
+                        sizeWHt = sizeWHt + sizet
+                        fk = True
                         lDown = tl
                         rDown = tr
+                        sizeWH = sizeWHt
                     center = self.find_new_point(rDown, lUp, rUp, lDown)
                     center_line = self.find_new_point(lUp, rUp, center, s)
                     k += 1
-                if k == 10:
+                if fk == False:
                     sizeWH = 1
                 t2 = rUp
                 t1 = lUp
-
                 t.append([t1, t2])
                 continue
             f = self.are_points_in_same_direction(lDown, lUp, t1) and self.are_points_in_same_direction(rDown, rUp, t2)
@@ -462,11 +461,11 @@ class Grid:
                 center_line = self.find_new_point(t1, t2, center, s)
                 t.append([t1, t2])
             if f2 == False:
+                print('f2')
+                sizeWH = 1
                 sizet = 1
-                while (self.are_points_in_same_direction(lDown, lUp, t1) == False or self.are_points_in_same_direction(
-                        rDown, rUp, t2)
-                       == False):
-
+                while (self.are_points_in_same_direction(lDown, lUp, t1) == False
+                       or self.are_points_in_same_direction(rDown, rUp, t2) == False):
                     center = self.find_new_point(rDown, lUp, rUp, lDown)
                     if s2 != None:
                         lDown = self.find_new_point(center, s2, lUp, lDown)
@@ -527,13 +526,13 @@ class Grid:
                     rDown = rUp
                     rUp = t2
                     lUp = t1
-                arrL = [lDown, lUp]
-                arrR = [rDown, rUp]
                 center = self.find_new_point(rDown, lUp, rUp, lDown)
                 center_line = self.find_new_point(lUp, rUp, center, s)
                 k = 0
+                sizeWHt = sizeWH
                 tl = lUp
                 tr = rUp
+                fk= False
                 while (k < 10):
                     if s2 != None:
                         tl = self.find_new_point(center, s2, lUp, lDown)
@@ -543,14 +542,18 @@ class Grid:
                         tl = self.find_new_point(center2[0], center2[1], lUp, lDown)
                         tr = self.find_new_point(center2[0], center2[1], rUp, rDown)
                     sizet = sizet / 2
+                    sizeWHt = sizeWHt - sizet
                     if self.does_line_intersect_square(tl, tr, [(0, 0), (0, self.height), (self.width, self.height),
                                                                 (self.width, 0)]) == False:
                         lUp = tl
                         rUp = tr
-                        sizeWH = sizeWH - sizet
+
                     else:
+                        sizeWHt = sizeWHt + sizet
+                        fk = True
                         lDown = tl
                         rDown = tr
+                        sizeWH = sizeWHt
                     center = self.find_new_point(rDown, lUp, rUp, lDown)
                     center_line = self.find_new_point(lUp, rUp, center, s)
 
@@ -686,18 +689,25 @@ class Grid:
     def get_dist(self, all_blocks,image, parent_frame):
         p_d = []
         for point in self.points_distance:
-            true_block, new_img_points = None, None
+            p_d.append(self.get_point_2D(all_blocks,point))
+            if len(p_d) == 2:
+                dist = self.Distance(p_d[0], p_d[1])
+                self.labelDist = Label(parent_frame, text="Дистанция = "+str(round(dist * (int(self.h) / (int(self.h) * 2)), 2))+"cм")
+                self.labelDist.grid(row=9, column=0, padx=0, pady=0, sticky='w')
+                image.create_line_dist(p_d[0],p_d[1])
+    def get_point_2D(self, all_blocks,point):
+        true_block, new_img_points = None, None
+        for i, blocks in enumerate(all_blocks):
+            for block in blocks:
+                p_b = [self.allPoints[p[0]][p[1]] for p in block]
 
-            for i, blocks in enumerate(all_blocks):
-                for block in blocks:
-                    p_b = [self.allPoints[p[0]][p[1]] for p in block]
-
-                    if self.is_point_in_quad(point[0], point[1], p_b[0][0], p_b[0][1], p_b[1][0], p_b[1][1], p_b[3][0], p_b[3][1], p_b[2][0], p_b[2][1]):
-                        new_img_points = [p_b[0], p_b[1], p_b[3], p_b[2]]
-                        true_block = [block,i]
-                        break
-                if true_block:
+                if self.is_point_in_quad(point[0], point[1], p_b[0][0], p_b[0][1], p_b[1][0], p_b[1][1], p_b[3][0], p_b[3][1], p_b[2][0], p_b[2][1]):
+                    new_img_points = [p_b[0], p_b[1], p_b[3], p_b[2]]
+                    true_block = [block,i]
                     break
+            if true_block:
+                break
+        if true_block:
             if self.s2 is not None and self.s is not None:
                 mint2 = []
                 mint2.append([new_img_points[0], new_img_points[3], new_img_points[1], new_img_points[2]])
@@ -726,16 +736,18 @@ class Grid:
                         a = a+ (int(self.w) * 2 * self.sizeWH[2])
                     for i in range(true_block[0][0][1]-tminus):
                         a = a + (int(self.w) * 2)
-
-
+                print('ssssssssssssss')
+                print(true_block)
+                print(len(self.allPoints)-1)
+                print(len(all_blocks) - 1)
+                print(true_block[0][0][0])
+                print(len(all_blocks) - 2)
                 a2 = self.point_position_in_percentages(s2p1, s2p2, ts2)
                 if true_block[1] == 0:
                     a2 = ((a2[1] / 100) *(int(self.h) * 2 * self.sizeWH[0]))
-                elif true_block[1] == (len(all_blocks)-1) :
-
+                elif true_block[0][0][0] == (len(self.allPoints) -2) :
+                    print( self.sizeWH[1])
                     a2 = (int(self.h) * 2 * self.sizeWH[0]) + ((a2[1] / 100) *(int(self.h) * 2 * self.sizeWH[1]))
-
-
                     for i in range(len(all_blocks)-2):
                         a2 = a2 + (int(self.h) * 2)
                 else:
@@ -748,13 +760,8 @@ class Grid:
                     for i in range(true_block[1]-tminus):
                         a2 = a2 + (int(self.h) * 2)
 
+                return [a, a2]
 
-                p_d.append([a, a2])
-                if len(p_d) == 2:
-                    dist = self.Distance(p_d[0], p_d[1])
-                    self.labelDist = Label(parent_frame, text="Дистанция = "+str(round(dist * (int(self.h) / (int(self.h) * 2)), 2))+"cм")
-                    self.labelDist.grid(row=9, column=0, padx=0, pady=0, sticky='w')
-                    image.create_line_dist(p_d[0],p_d[1])
             else:
                 peresek = []
                 par1_1 = [new_img_points[0], 0]
@@ -815,21 +822,16 @@ class Grid:
                 a2 = new_point[1]
                 if true_block[1] == 0:
                     a2 = (a2 * self.sizeWH[0])
-                elif true_block[1] == (len(all_blocks)-1):
+                elif true_block[0][0][0] == (len(self.allPoints) -2):
                     a2 = (int(self.h) * 2 * self.sizeWH[0]) + (a2 * self.sizeWH[1])
                     for i in range(len(all_blocks)-2):
                         a2 = a2 + (int(self.h) * 2)
                 else:
-
+                    print(3333)
                     a2 = a2 + (int(self.h) * 2 * self.sizeWH[0])
                     for i in range(true_block[1]-1):
                         a2 = a2 + (int(self.h) * 2)
-
-                p_d.append([a, a2])
-
-                if len(p_d) == 2:
-                    dist = self.Distance(p_d[0], p_d[1])
-                    self.labelDist = Label(parent_frame, text="Дистанция = "+str(round(dist * (int(self.h) / (int(self.h) * 2)), 2))+"cм")
-                    self.labelDist.grid(row=9, column=0, padx=0, pady=0, sticky='w')
-                    image.create_line_dist(p_d[0],p_d[1])
+                return [a, a2]
+        else:
+            return False
 
