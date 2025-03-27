@@ -22,10 +22,10 @@ class PyPhotoEditor:
         self.image_tabs = Notebook(self.root)
         self.opened_images = []
         self.last_viewed_images = []
-
+        self.open_recent_menu = None
         self.init()
 
-        self.open_recent_menu = None
+
 
     def init(self):
         self.root.title("DTP_Editor")

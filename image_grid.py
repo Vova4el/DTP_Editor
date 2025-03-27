@@ -165,6 +165,12 @@ class ImageGrid(ImageInfo):
             if (point["image_x"] - radius <= image_x <= point["image_x"] + radius and
                     point["image_y"] - radius <= image_y <= point["image_y"] + radius):
                 self._remove_lines()
+                if self.canvas2:
+                    self.canvas2.destroy()
+                    self.canvas2 = None
+                    self.grid.points_distance = []  # Initialize or adjust as needed
+                    if self.grid.labelDist:
+                        self.grid.labelDist.destroy()
                 # Обновление координат точки
                 self.canvas.coords(
                     point["id"],
@@ -245,7 +251,8 @@ class ImageGrid(ImageInfo):
                 self.canvas2.destroy()
                 self.canvas2 = None
             self.grid.points_distance = []  # Initialize or adjust as needed
-
+            if self.grid.labelDist:
+                self.grid.labelDist.destroy()
 
 
             points = [(float(self.entryX1.get()), float(self.entryY1.get())),
@@ -504,7 +511,6 @@ class ImageGrid(ImageInfo):
 
 
                 if arr != []:
-                    print(i)
                     self.all_blocks.append(arr)
             self.update_image_on_canvas()
             # Создание Canvas для отображения изображения
@@ -512,8 +518,8 @@ class ImageGrid(ImageInfo):
             self.canvas2.grid(row=8, column=0, columnspan=3)
 
             big_img = None
-            w = int(self.grid.w) *2
-            h = int(self.grid.h) *2
+            w = int(float(self.grid.w) * 2)
+            h = int(float(self.grid.h) * 2)
             self.grid.jmin = jmin
             self.grid.jmax = jmax
             self.grid.imin = imin
@@ -595,7 +601,6 @@ class ImageGrid(ImageInfo):
                         t.append(6)
                         wp += w
                         hp = int(h * self.grid.sizeWH[1])
-                        print(66666666666)
                     # левая граница (но не угол)
                     elif p[0][1] == 0 :
                         t.append(8)
@@ -606,13 +611,11 @@ class ImageGrid(ImageInfo):
                         t.append(9)
                         wp += int(w*self.grid.sizeWH[3])
                         hp = h
-                        print(99999999999)
                     # Обычный блок (без границ)
                     else:
                         t.append(7)
                         wp += w
                         hp = h
-                    print(t)
                 pts1 = np.float32([self.grid.allPoints[p1[0]][p1[1]], self.grid.allPoints[p2[0]][p2[1]], self.grid.allPoints[p3[0]][p3[1]], self.grid.allPoints[p4[0]][p4[1]]])
                 pts2 = np.float32(
                     [[0, 0], [0, hp], [int(wp), 0], [int(wp), hp]])
@@ -761,12 +764,22 @@ class ImageGrid(ImageInfo):
                 x, y = self._get_actual_image_coordinates(event)
                 event = Event(obj[i+1][0], obj[i+1][1])
                 x2, y2 = self._get_actual_image_coordinates(event)
+                print(x, y)
                 if self.grid.check_point_in_blocks((x, y), self.all_blocks) and self.grid.check_point_in_blocks((x2, y2), self.all_blocks):
                     p1 = self.grid.get_point_2D(self.all_blocks, obj[i])
                     p2 = self.grid.get_point_2D(self.all_blocks, obj[i + 1])
                     lines.append([p1,p2])
 
                 draw.line([tuple(obj[i]), tuple(obj[i+1])], fill="cyan", width=6)
+            event = Event(obj[0][0], obj[0][1])
+            x, y = self._get_actual_image_coordinates(event)
+            event = Event(obj[len(obj)-1][0], obj[len(obj)-1][1])
+            x2, y2 = self._get_actual_image_coordinates(event)
+            if self.grid.check_point_in_blocks((x, y), self.all_blocks) and self.grid.check_point_in_blocks((x2, y2),
+                                                                                                            self.all_blocks):
+                p1 = self.grid.get_point_2D(self.all_blocks, obj[0])
+                p2 = self.grid.get_point_2D(self.all_blocks, obj[len(obj)-1])
+                lines.append([p1, p2])
             draw.line([tuple(obj[0]), tuple(obj[len(obj)-1])], fill="cyan", width=6)
             event = Event(obj[0][0], obj[0][1])
             x, y = self._get_actual_image_coordinates(event)

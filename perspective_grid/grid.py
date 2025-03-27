@@ -30,7 +30,7 @@ class Grid:
         self.jmax = 0
         self.imin = 0
         self.imax = 0
-
+        self.labelDist = None
         self.points_in_new_img = []
 
     def make_grid(self):
@@ -461,7 +461,6 @@ class Grid:
                 center_line = self.find_new_point(t1, t2, center, s)
                 t.append([t1, t2])
             if f2 == False:
-                print('f2')
                 sizeWH = 1
                 sizet = 1
                 while (self.are_points_in_same_direction(lDown, lUp, t1) == False
@@ -692,7 +691,7 @@ class Grid:
             p_d.append(self.get_point_2D(all_blocks,point))
             if len(p_d) == 2:
                 dist = self.Distance(p_d[0], p_d[1])
-                self.labelDist = Label(parent_frame, text="Дистанция = "+str(round(dist * (int(self.h) / (int(self.h) * 2)), 2))+"cм")
+                self.labelDist = Label(parent_frame, text="Дистанция = "+str(round(dist * (float(self.h) / (float(self.h) * 2)), 2))+"cм")
                 self.labelDist.grid(row=9, column=0, padx=0, pady=0, sticky='w')
                 image.create_line_dist(p_d[0],p_d[1])
     def get_point_2D(self, all_blocks,point):
@@ -723,42 +722,35 @@ class Grid:
 
                 a = self.point_position_in_percentages(s1p1, s1p2, ts1)
                 if true_block[0][0][1] == self.jmin:
-                    a = ((a[0] / 100) *(int(self.w) * 2 * self.sizeWH[2]))
+                    a = ((a[0] / 100) *(int(float(self.w) * 2) * self.sizeWH[2]))
                 elif true_block[0][0][1] == self.jmax:
-                    a = (int(self.w) * 2 * self.sizeWH[2]) + ((a[0] / 100) *(int(self.w) * 2 * self.sizeWH[3]))
+                    a = (int(float(self.w) * 2) * self.sizeWH[2]) + ((a[0] / 100) *(int(float(self.w) * 2) * self.sizeWH[3]))
                     for i in range(self.jmax-1):
-                        a = a + (int(self.w) * 2)
+                        a = a + (int(float(self.w) * 2))
                 else:
                     tminus = self.jmin
-                    a = ((a[0] / 100) * (int(self.w) * 2))
+                    a = ((a[0] / 100) * (int(float(self.w) * 2)))
                     if self.jmin == 0:
                         tminus += 1
-                        a = a+ (int(self.w) * 2 * self.sizeWH[2])
+                        a = a+ (int(float(self.w) * 2) * self.sizeWH[2])
                     for i in range(true_block[0][0][1]-tminus):
-                        a = a + (int(self.w) * 2)
-                print('ssssssssssssss')
-                print(true_block)
-                print(len(self.allPoints)-1)
-                print(len(all_blocks) - 1)
-                print(true_block[0][0][0])
-                print(len(all_blocks) - 2)
+                        a = a + (int(float(self.w) * 2))
                 a2 = self.point_position_in_percentages(s2p1, s2p2, ts2)
                 if true_block[1] == 0:
-                    a2 = ((a2[1] / 100) *(int(self.h) * 2 * self.sizeWH[0]))
+                    a2 = ((a2[1] / 100) *(int(float(self.h) * 2) * self.sizeWH[0]))
                 elif true_block[0][0][0] == (len(self.allPoints) -2) :
-                    print( self.sizeWH[1])
-                    a2 = (int(self.h) * 2 * self.sizeWH[0]) + ((a2[1] / 100) *(int(self.h) * 2 * self.sizeWH[1]))
+                    a2 = (int(float(self.h) * 2) * self.sizeWH[0]) + ((a2[1] / 100) *(int(float(self.h) * 2) * self.sizeWH[1]))
                     for i in range(len(all_blocks)-2):
-                        a2 = a2 + (int(self.h) * 2)
+                        a2 = a2 + (int(float(self.h) * 2))
                 else:
                     tminus = 0
-                    a2 = ((a2[1] / 100) * (int(self.h) * 2))
+                    a2 = ((a2[1] / 100) * (int(float(self.h) * 2)))
                     if self.imin == 0:
                         tminus += 1
-                        a2 = a2 + (int(self.h) * 2 * self.sizeWH[0])
+                        a2 = a2 + (int(float(self.h) * 2) * self.sizeWH[0])
 
                     for i in range(true_block[1]-tminus):
-                        a2 = a2 + (int(self.h) * 2)
+                        a2 = a2 + (int(float(self.h) * 2))
 
                 return [a, a2]
 
@@ -790,47 +782,46 @@ class Grid:
                 for per in peresek:
                     a = self.point_position_in_percentages(per[2][0], per[3][0], per[1])
                     if per[2][1] == 0 and per[3][1] == 3 or per[2][1] == 1 and per[3][1] == 2:
-                        y = (a[0] / 100) * (int(self.h) * 2)
+                        y = (a[0] / 100) * (int(float(self.h) * 2))
                         if per[2][1] == 0:
                             t = [0, y]
                         else:
-                            t = [(int(self.w) * 2), y]
+                            t = [(int(float(self.w) * 2)), y]
                         p.append([per[0][1], t])
                     else:
-                        x = (a[0] / 100) * (int(self.w) * 2)
+                        x = (a[0] / 100) * (int(float(self.w) * 2))
                         if per[2][1] == 0:
                             t = [x, 0]
                         else:
-                            t = [x, (int(self.h) * 2)]
+                            t = [x, (int(float(self.h) * 2))]
                         p.append([per[0][1], t])
-                ugly = [[0, 0], [(int(self.w) * 2), 0], [(int(self.w) * 2), (int(self.h) * 2)], [0, (int(self.h) * 2)]]
+                ugly = [[0, 0], [(int(float(self.w) * 2)), 0], [(int(float(self.w) * 2)), (int(float(self.h) * 2))], [0, (int(float(self.h) * 2))]]
                 new_point = self.find_new_point(ugly[p[0][0]], p[0][1], ugly[p[1][0]], p[1][1])
 
                 a = new_point[0]
                 if true_block[0][0][1] == self.jmin:
                     a = a * self.sizeWH[2]
                 elif true_block[0][0][1] == self.jmax:
-                    a = (int(self.w) * 2 * self.sizeWH[2]) + (a * self.sizeWH[3])
+                    a = (int(float(self.w) * 2) * self.sizeWH[2]) + (a * self.sizeWH[3])
                     for i in range(self.jmax-self.jmin-1):
-                        a = a + (int(self.w) * 2)
+                        a = a + (int(float(self.w) * 2))
                 else:
-                    a = a+ (int(self.w) * 2 * self.sizeWH[2])
+                    a = a+ (int(float(self.w) * 2) * self.sizeWH[2])
                     for i in range(true_block[0][0][1]-self.jmin-1):
-                        a = a + (int(self.w) * 2)
+                        a = a + (int(float(self.w) * 2))
 
 
                 a2 = new_point[1]
                 if true_block[1] == 0:
                     a2 = (a2 * self.sizeWH[0])
                 elif true_block[0][0][0] == (len(self.allPoints) -2):
-                    a2 = (int(self.h) * 2 * self.sizeWH[0]) + (a2 * self.sizeWH[1])
+                    a2 = (int(float(self.h) * 2) * self.sizeWH[0]) + (a2 * self.sizeWH[1])
                     for i in range(len(all_blocks)-2):
-                        a2 = a2 + (int(self.h) * 2)
+                        a2 = a2 + (int(float(self.h) * 2))
                 else:
-                    print(3333)
-                    a2 = a2 + (int(self.h) * 2 * self.sizeWH[0])
+                    a2 = a2 + (int(float(self.h) * 2) * self.sizeWH[0])
                     for i in range(true_block[1]-1):
-                        a2 = a2 + (int(self.h) * 2)
+                        a2 = a2 + (int(float(self.h) * 2))
                 return [a, a2]
         else:
             return False
