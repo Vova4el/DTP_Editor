@@ -25,7 +25,7 @@ class AI:
         image_path = path  # путь к изображению
 
         # Выполнение инференса
-        results = model.predict(source=image_path, conf=0.25)  # conf=0.75 - минимальная уверенность для детекции
+        results = model.predict(source=image_path, conf=0.1)  # conf=0.75 - минимальная уверенность для детекции
 
         # очищаем
         self.objects_points = []

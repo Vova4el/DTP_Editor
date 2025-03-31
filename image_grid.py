@@ -1,5 +1,5 @@
 from random import random
-from tkinter import Frame, Label, Entry, Button, messagebox, END, Canvas
+from tkinter import Frame, Label, Entry, Button, messagebox, END, Canvas, Scale, HORIZONTAL
 
 from PIL import Image, ImageTk, ImageOps, ImageFilter, ImageEnhance, ImageDraw
 import cv2
@@ -29,14 +29,20 @@ class ImageGrid(ImageInfo):
         self.root = None
         self.right_frame = None  # Or replace with actual initialization
         self.additional_frame = None  # Атрибут для хранения дополнительного фрейма
-
+        self.stats_labels = None
         self.line_ids_BR= []
 
+        self.image_info = None
         self.img_height = None
         self.img_width = None
         self.zoom_level = None
         self.image_on_canvas = None
         self.canvas2 = None
+        self.labelSlider = None
+
+        self.slider = None
+        self.labelSlider = None
+        self.minAccTrac = 10
 
         self.all_blocks = []
 
@@ -129,6 +135,7 @@ class ImageGrid(ImageInfo):
             self._bind_grid()
             self.grid.h = dialog.result[0]
             self.grid.w = dialog.result[1]
+
             self.add_additional_frame(self.tab)
             self._update_canvasXY()
             self.add_main_lines_frame()
@@ -311,48 +318,56 @@ class ImageGrid(ImageInfo):
     def add_additional_frame(self, parent_frame):
         if self.additional_frame:
             self.additional_frame.destroy()
-
+            self.additional_frame = None
+            self.stats_labels = None
+            self.slider = None
+            current_rows = 0
             # Создаем новый дополнительный фрейм
-        self.additional_frame = Frame(parent_frame, bg="lightgrey")
-        self.additional_frame.grid(row=0, column=1, sticky="nsew")
-        self.additional_frame.grid_columnconfigure(1, weight=0)
+        if self.additional_frame is None:
+            self.additional_frame = Frame(parent_frame, bg="lightgrey")
+            current_rows = self.additional_frame.grid_size()[1]  # (columns, rows)
+            self.additional_frame.grid(row=current_rows, column=1, sticky="nsew")
+            self.additional_frame.grid_columnconfigure(1, weight=0)
+
+
 
         self.label1 = Label(self.additional_frame, text="Длина красных сторон:")
-        self.label1.grid(row=1, column=0, padx=0, pady=5, sticky='w')
+
+        self.label1.grid(row=current_rows+1, column=0, padx=0, pady=5, sticky='w')
 
         self.entry1 = Entry(self.additional_frame)
-        self.entry1.grid(row=1, column=1, padx=0, pady=0, sticky='w')
+        self.entry1.grid(row=current_rows+1, column=1, padx=0, pady=0, sticky='w')
         self.entry1.insert(0, self.grid.h)
 
         self.label2 = Label(self.additional_frame, text="Длина синих сторон:")
-        self.label2.grid(row=2, column=0, padx=0, pady=0, sticky='w')
+        self.label2.grid(row=current_rows+2, column=0, padx=0, pady=0, sticky='w')
 
         self.entry2 = Entry(self.additional_frame)
-        self.entry2.grid(row=2, column=1, padx=0, pady=0, sticky='w')
+        self.entry2.grid(row=current_rows+2, column=1, padx=0, pady=0, sticky='w')
         self.entry2.insert(0, self.grid.w)
 
         # Создаем кнопку, которая будет выводить содержимое поля ввода
         self.show_button = Button(self.additional_frame, text="Применить изменение",
                                   command=self._update_canvas_coordinates)
-        self.show_button.grid(row=3, column=0, padx=(0,10), pady=10, sticky='w')
+        self.show_button.grid(row=current_rows+3, column=0, padx=(0,10), pady=10, sticky='w')
 
         self.labelX = Label(self.additional_frame, text="X")
-        self.labelX.grid(row=3, column=1, padx=0, pady=0, sticky='w')
+        self.labelX.grid(row=current_rows+3, column=1, padx=0, pady=0, sticky='w')
 
         self.labelY = Label(self.additional_frame, text="Y")
-        self.labelY.grid(row=3, column=2, padx=0, pady=0, sticky='w')
+        self.labelY.grid(row=current_rows+3, column=2, padx=0, pady=0, sticky='w')
 
-        self.entryX1 = self.create_entry(4, 1, self.grid.points[0][0])
-        self.entryY1 = self.create_entry(4, 2, self.grid.points[0][1])
+        self.entryX1 = self.create_entry(current_rows+4, 1, self.grid.points[0][0])
+        self.entryY1 = self.create_entry(current_rows+4, 2, self.grid.points[0][1])
 
-        self.entryX2 = self.create_entry(5, 1, self.grid.points[1][0])
-        self.entryY2 = self.create_entry(5, 2, self.grid.points[1][1])
+        self.entryX2 = self.create_entry(current_rows+5, 1, self.grid.points[1][0])
+        self.entryY2 = self.create_entry(current_rows+5, 2, self.grid.points[1][1])
 
-        self.entryX3 = self.create_entry(6, 1, self.grid.points[2][0])
-        self.entryY3 = self.create_entry(6, 2, self.grid.points[2][1])
+        self.entryX3 = self.create_entry(current_rows+6, 1, self.grid.points[2][0])
+        self.entryY3 = self.create_entry(current_rows+6, 2, self.grid.points[2][1])
 
-        self.entryX4 = self.create_entry(7, 1, self.grid.points[3][0])
-        self.entryY4 = self.create_entry(7, 2, self.grid.points[3][1])
+        self.entryX4 = self.create_entry(current_rows+7, 1, self.grid.points[3][0])
+        self.entryY4 = self.create_entry(current_rows+7, 2, self.grid.points[3][1])
 
 
     def remove_additional_frame(self):
@@ -360,7 +375,7 @@ class ImageGrid(ImageInfo):
         if self.additional_frame:
             self.additional_frame.destroy()
             self.additional_frame = None  # Очищаем ссылку после удаления
-
+            self.stats_labels = None
     def _remove_lines_BR(self):
         for line_id in self.line_ids_BR:
             self.canvas.delete(line_id)
@@ -515,7 +530,8 @@ class ImageGrid(ImageInfo):
             self.update_image_on_canvas()
             # Создание Canvas для отображения изображения
             self.canvas2 = Canvas(self.additional_frame, bg="white", width=400, height=400)
-            self.canvas2.grid(row=8, column=0, columnspan=3)
+            current_rows = self.additional_frame.grid_size()[1]  # (columns, rows)
+            self.canvas2.grid(row=current_rows+8, column=0, columnspan=3)
 
             big_img = None
             w = int(float(self.grid.w) * 2)
@@ -753,24 +769,69 @@ class ImageGrid(ImageInfo):
         self.root = root
 
     def find_tracks(self):
-        self.ai.getTraces(self.path)
+        self.image = self.original_image.copy()
+        if self.ai.objects_confidences == []:
+            self.ai.getTraces(self.path)
         draw = ImageDraw.Draw(self.image)
         lines = []
 
+        confidence_ranges = {
+            "10-20%": 0,
+            "20-30%": 0,
+            "30-40%": 0,
+            "40-50%": 0,
+            "50-60%": 0,
+            "60-70%": 0,
+            "70-80%": 0,
+            "80-90%": 0,
+            "90-100%": 0
+        }
 
-        for obj in self.ai.objects_points:
+        for obj_idx, obj in enumerate(self.ai.objects_points):
+            if self.ai.objects_confidences[obj_idx] * 100 < self.minAccTrac:
+                continue  # Пропускаем объекты с низкой точностью
+            confidence_percent = self.ai.objects_confidences[obj_idx] * 100
+            # Определяем цвет в зависимости от точности
+            if confidence_percent < 20:
+                color = "red"  # 10-20% - красный
+                confidence_ranges["10-20%"] += 1
+            elif confidence_percent < 30:
+                color = "orange"  # 20-30% - оранжевый
+                confidence_ranges["20-30%"] += 1
+            elif confidence_percent < 40:
+                color = "yellow"  # 30-40% - желтый
+                confidence_ranges["30-40%"] += 1
+            elif confidence_percent < 50:
+                color = "yellowgreen"  # 40-50% - желто-зеленый
+                confidence_ranges["40-50%"] += 1
+            elif confidence_percent < 60:
+                color = "lime"  # 50-60% - лаймовый
+                confidence_ranges["50-60%"] += 1
+            elif confidence_percent < 70:
+                color = "green"  # 60-70% - зеленый
+                confidence_ranges["60-70%"] += 1
+            elif confidence_percent < 80:
+                color = "cyan"  # 70-80% - голубой
+                confidence_ranges["70-80%"] += 1
+            elif confidence_percent < 90:
+                color = "blue"  # 80-90% - синий
+                confidence_ranges["80-90%"] += 1
+            else:
+                color = "purple"  # 90-100% - фиолетовый
+                confidence_ranges["90-100%"] += 1
+
             for i in range(len(obj)-1):
                 event = Event(obj[i][0], obj[i][1])
                 x, y = self._get_actual_image_coordinates(event)
                 event = Event(obj[i+1][0], obj[i+1][1])
                 x2, y2 = self._get_actual_image_coordinates(event)
-                print(x, y)
-                if self.grid.check_point_in_blocks((x, y), self.all_blocks) and self.grid.check_point_in_blocks((x2, y2), self.all_blocks):
-                    p1 = self.grid.get_point_2D(self.all_blocks, obj[i])
-                    p2 = self.grid.get_point_2D(self.all_blocks, obj[i + 1])
-                    lines.append([p1,p2])
+                if self.all_blocks:
+                    if self.grid.check_point_in_blocks((x, y), self.all_blocks) and self.grid.check_point_in_blocks((x2, y2), self.all_blocks):
+                        p1 = self.grid.get_point_2D(self.all_blocks, obj[i])
+                        p2 = self.grid.get_point_2D(self.all_blocks, obj[i + 1])
+                        lines.append([p1,p2])
 
-                draw.line([tuple(obj[i]), tuple(obj[i+1])], fill="cyan", width=6)
+                draw.line([tuple(obj[i]), tuple(obj[i+1])], fill=color, width=6)
             event = Event(obj[0][0], obj[0][1])
             x, y = self._get_actual_image_coordinates(event)
             event = Event(obj[len(obj)-1][0], obj[len(obj)-1][1])
@@ -780,7 +841,7 @@ class ImageGrid(ImageInfo):
                 p1 = self.grid.get_point_2D(self.all_blocks, obj[0])
                 p2 = self.grid.get_point_2D(self.all_blocks, obj[len(obj)-1])
                 lines.append([p1, p2])
-            draw.line([tuple(obj[0]), tuple(obj[len(obj)-1])], fill="cyan", width=6)
+            draw.line([tuple(obj[0]), tuple(obj[len(obj)-1])], fill=color, width=6)
             event = Event(obj[0][0], obj[0][1])
             x, y = self._get_actual_image_coordinates(event)
             event = Event(obj[len(obj)-1][0], obj[len(obj)-1][1])
@@ -792,8 +853,86 @@ class ImageGrid(ImageInfo):
                 lines.append([p1, p2])
         if self.image_info:
             self.image_info.create_line_traces(lines)
+
+
+        if self.additional_frame is None:
+            self.additional_frame = Frame(self.tab, bg="lightgrey")
+            current_rows = self.additional_frame.grid_size()[1]  # (columns, rows)
+            self.additional_frame.grid(row=current_rows, column=1, sticky="nsew")
+            self.additional_frame.grid_columnconfigure(1, weight=0)
+
+
+        if self.slider is None:
+            current_rows = self.additional_frame.grid_size()[1]  # (columns, rows)
+            self.slider = Scale(self.additional_frame , from_=10, to=100, orient=HORIZONTAL, command=self.on_slider_change)
+            self.slider.grid(row=current_rows, column=0, pady=20, padx=20, sticky='w')
+
+            self.labelSlider = Label(self.additional_frame , text="Текущее значение: 10")
+            self.labelSlider.grid(row=current_rows + 1, column=0, sticky='w')
+
+        if self.stats_labels is None:
+            current_rows = self.additional_frame.grid_size()[1]  # (columns, rows)
+            self.stats_labels = {}  # Словарь для хранения всех меток
+
+            # Заголовок
+            self.stats_labels['header'] = Label(self.additional_frame, text="Статистика обнаружения:",
+                                                font=('Arial', 10, 'bold'), bg="lightgrey")
+            self.stats_labels['header'].grid(row=current_rows+1, column=0, columnspan=2, sticky="w")
+            current_rows = self.additional_frame.grid_size()[1]  # (columns, rows)
+            # Метки для каждого диапазона
+            ranges = ["10-20%", "20-30%", "30-40%", "40-50%",
+                      "50-60%", "60-70%", "70-80%", "80-90%", "90-100%"]
+
+            for i, range_name in enumerate(ranges, start=1):
+                # Цветной индикатор
+                color_canvas = Canvas(self.additional_frame, width=20, height=20,
+                                      bg=self.get_color_for_range(range_name),
+                                      highlightthickness=0)
+                color_canvas.grid(row=current_rows+i, column=0, padx=(0, 5), sticky="w")
+
+                # Текстовая метка
+                self.stats_labels[range_name] = Label(self.additional_frame,
+                                                      text=f"{range_name}: 0 объектов",
+                                                      bg="lightgrey")
+                self.stats_labels[range_name].grid(row=current_rows+i, column=1, sticky="w")
+
+            # Разделитель и итог
+            self.stats_labels['separator'] = Label(self.additional_frame, text="-" * 30, bg="lightgrey")
+            self.stats_labels['separator'].grid(row=current_rows+len(ranges) + 1, column=0, columnspan=2, pady=(5, 0))
+
+            self.stats_labels['total'] = Label(self.additional_frame,
+                                               text="Всего обнаружено: 0 объектов",
+                                               font=('Arial', 10, 'bold'),
+                                               bg="lightgrey")
+            self.stats_labels['total'].grid(row=current_rows+len(ranges) + 2, column=0, columnspan=2)
+        self.update_stats(confidence_ranges)
         self.update_image_on_canvas()
 
+    def get_color_for_range(self, range_name):
+        """Возвращает цвет для соответствующего диапазона точности"""
+        return {
+            "10-20%": "red",
+            "20-30%": "orange",
+            "30-40%": "yellow",
+            "40-50%": "yellowgreen",
+            "50-60%": "lime",
+            "60-70%": "green",
+            "70-80%": "cyan",
+            "80-90%": "blue",
+            "90-100%": "purple"
+        }.get(range_name, "black")
+    def update_stats(self, confidence_ranges):
+        # Обновляем метки для каждого диапазона
+        for range_name, count in confidence_ranges.items():
+            self.stats_labels[range_name].config(text=f"{range_name}: {count} объектов")
+
+        # Обновляем итоговую метку
+        total_count = sum(confidence_ranges.values())
+        self.stats_labels['total'].config(text=f"Всего обнаружено: {total_count} объектов")
+    def on_slider_change(self,value):
+        # Эта функция вызывается при движении ползунка
+        self.labelSlider.config(text=f"Текущее значение: {value}")
+        self.minAccTrac = int(value)
 
     def Close_grid(self, root):
         self._unbind_grid()
@@ -803,6 +942,8 @@ class ImageGrid(ImageInfo):
         self.remove_additional_frame()
         if self.additional_frame:
             self.additional_frame.destroy()
+            self.additional_frame = None
+            self.stats_labels = None
         self.image = self.original_image.copy()
         self.update_image_on_canvas()
         self.canvas.delete(self.line_distance_ids_BR)
@@ -821,7 +962,8 @@ class ImageGrid(ImageInfo):
         self.line_distance_ids_BR= []
         self.right_frame = None  # Or replace with actual initialization
         self.additional_frame = None  # Атрибут для хранения дополнительного фрейма
-
+        self.ai = AI()
+        self.stats_labels = None
         self.line_ids_BR= []
 
 

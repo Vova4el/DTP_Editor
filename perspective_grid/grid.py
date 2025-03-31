@@ -681,8 +681,9 @@ class Grid:
                 p_b = []
                 for p in block:
                     p_b.append(self.allPoints[p[0]][p[1]])
-                if self.is_point_in_quad(point[0], point[1], p_b[0][0], p_b[0][1], p_b[1][0], p_b[1][1], p_b[3][0], p_b[3][1], p_b[2][0], p_b[2][1]):
-                    return True
+                if point:
+                    if self.is_point_in_quad(point[0], point[1], p_b[0][0], p_b[0][1], p_b[1][0], p_b[1][1], p_b[3][0], p_b[3][1], p_b[2][0], p_b[2][1]):
+                        return True
         return False
 
     def get_dist(self, all_blocks,image, parent_frame):
@@ -691,8 +692,9 @@ class Grid:
             p_d.append(self.get_point_2D(all_blocks,point))
             if len(p_d) == 2:
                 dist = self.Distance(p_d[0], p_d[1])
+                current_rows = parent_frame.grid_size()[1]  # (columns, rows)
                 self.labelDist = Label(parent_frame, text="Дистанция = "+str(round(dist * (float(self.h) / (float(self.h) * 2)), 2))+"cм")
-                self.labelDist.grid(row=9, column=0, padx=0, pady=0, sticky='w')
+                self.labelDist.grid(row=current_rows, column=0, padx=0, pady=0, sticky='w')
                 image.create_line_dist(p_d[0],p_d[1])
     def get_point_2D(self, all_blocks,point):
         true_block, new_img_points = None, None
